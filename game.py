@@ -164,5 +164,26 @@ class Game:
       a.y < b.y + b.size and
       a.y + a.size > b.y
     )
+  
+  def draw(self):
+    if self.state == "MENU":
+      self.screen.blit(self.bg, (0,0))
+      font = pygame.font.SysFont(None, 50)
+      text = font.render("Pressione Enter para defender a galaxia", True, {255, 255, 255})
+      self.screen.blit(text, (80, 250))
+      pygame.display.flip()
+      return
+    
+    self.screen.blit(self.bg, (0,0))
+    self.player.draw(self.screen)
+
+    for enemy in self.enemies:
+      enemy.draw(self.screen)
+
+    for bullet in self.bullets:
+      bullet.draw(self.screen)
+
+    for exp in self.explosions:
+      exp.draw(self.screen)
 
 
