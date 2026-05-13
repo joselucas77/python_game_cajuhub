@@ -78,16 +78,19 @@ class Game:
     self.bg = pygame.image.load("background.png").convert()
     self.bg = pygame.transform.scale(self.bg,(self.width, self.height))
 
-    self.bg = pygame.image.load("player.png").convert_alpha()
-    self.bg = pygame.transform.scale(self.player_img, (100, 100))
+    self.player_img = pygame.image.load("player.png").convert_alpha()
+    self.player_img = pygame.transform.scale(self.player_img, (100, 100))
 
-    self.bg = pygame.image.load("enemy.png").convert_alpha()
-    self.bg = pygame.transform.scale(self.player_img, (100, 200))
+    self.enemy_img = pygame.image.load("enemy.png").convert_alpha()
+    self.enemy_img = pygame.transform.scale(self.enemy_img, (100, 200))
 
-    self.bg = pygame.image.load("bullet.png").convert_alpha()
-    self.bg = pygame.transform.scale(self.player_img, (50, 40))
+    self.bullet_img = pygame.image.load("bullet.png").convert_alpha()
+    self.bullet_img = pygame.transform.scale(self.bullet_img, (50, 40))
 
     self.player = Player(375, 500, self.player_img)
+
+    self.spawn_timer = 0
+    self.running = True
 
     self.enemies = []
     self.bullets = []
@@ -141,9 +144,9 @@ class Game:
     self.explosions = [e for e in self.explosions if e.alive]
 
     for bullet in self.bullets[:]:
-      if enemy in self.enemies[:]:
+      for enemy in self.enemies[:]:
         if self.collide(bullet, enemy):
-          self.explosion.append(Explosion(enemy.x, enemy.y))
+          self.explosions.append(Explosion(enemy.x, enemy.y))
           self.explosion_sound.play()
           self.bullet.remove(bullet)
           self.enemies.remove(enemy)
