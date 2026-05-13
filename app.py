@@ -18,13 +18,13 @@ class Player(Entity):
         self.lives = 3
 
     def move(self, keys, width, height):
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_a]:
             self.x -= self.speed
-        if keys[pygame.K_RIGHT]:
+        if keys[pygame.K_d]:
             self.x += self.speed
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_w]:
             self.y -= self.speed
-        if keys[pygame.K_DOWN]:
+        if keys[pygame.K_s]:
             self.y += self.speed
 
         self.x = max(0, min(width - self.size, self.x))
