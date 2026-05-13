@@ -58,11 +58,11 @@ class Explosion:
     if self.radius > self.max_radius:
       self.alive = False
   def draw(self, screen):
-    paygame.draw.circle(screen, (255, 200, 0), (self.x, self.y), self.radius)
+    pygame.draw.circle(screen, (255, 200, 0), (self.x, self.y), self.radius)
 
 class Game:
   def __init__(self):
-    paygame.init()
+    pygame.init()
     pygame.mixer.init()
 
     self.width = 800
@@ -185,5 +185,24 @@ class Game:
 
     for exp in self.explosions:
       exp.draw(self.screen)
+
+    font = pygame.font.SysFOnt(None, 30)
+    lives = font.render(f"Vidas: {self.player.liver}", True, (255, 255, 255))
+    self.screen.blit(lives, (10, 10))
+
+    pygame.display.flip()
+
+  def run(self):
+    while self.running and self.player.lives > 0:
+      self.hanfle_events()
+      self.update()
+      self.draw()
+      self.clock.tick(60)
+
+    pygame.quit()
+
+if __name__ == "__main__":
+  game = Game()
+  game.run()
 
 
