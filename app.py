@@ -18,33 +18,27 @@ class Player(Entity):
         self.lives = 3
 
     def move(self, keys, width, height):
-        if keys[pygame.K_a]:
-            self.x -= self.speed
-        if keys[pygame.K_d]:
-            self.x += self.speed
-        if keys[pygame.K_w]:
-            self.y -= self.speed
-        if keys[pygame.K_s]:
-            self.y += self.speed
+        if keys[pygame.K_a]: self.x -= self.speed
+        if keys[pygame.K_d]: self.x += self.speed
+        if keys[pygame.K_w]: self.y -= self.speed
+        if keys[pygame.K_s]: self.y += self.speed
 
         self.x = max(0, min(width - self.size, self.x))
         self.y = max(0, min(height - self.size, self.y))
 
 class Enemy(Entity):
     def __init__(self, image):
-        x = random.randint(0, 750)
+        x = random.randint(0, 920)
         y = random.randint(-100, -40)
         super().__init__(x, y, 40, image)
         self.speed = random.randint(2, 5)
-        
     def update(self):
         self.y += self.speed
 
 class Bullet(Entity):
     def __init__(self, x, y, image):
         super().__init__(x, y, 10, image)
-        self.speed = 10
-        
+        self.speed = 12 
     def update(self):
         self.y -= self.speed
 
@@ -55,12 +49,9 @@ class Explosion:
         self.radius = 5
         self.max_radius = 30
         self.alive = True
-        
     def update(self):
         self.radius += 2
-        if self.radius > self.max_radius:
-            self.alive = False
-            
+        if self.radius > self.max_radius: self.alive = False
     def draw(self, screen):
         pygame.draw.circle(screen, (255, 200, 0), (self.x, self.y), self.radius)
 
@@ -71,46 +62,42 @@ class Game:
 
         self.width = 1000
         self.height = 800
-
         self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption("Space")
+        pygame.display.set_caption("Space Galaxy - Special Mode")
 
         self.clock = pygame.time.Clock()
         self.state = "MENU"
         self.running = True
+
+        self.score = 0
+        self.points_since_last_hit = 0  
+        self.special_available = 0
+        self.special_active_timer = 0
+        self.fire_rate_timer = 0
         self.spawn_timer = 0
 
-        # Carregamento de imagens
-        self.bg = pygame.image.load("background_galaxy.png").convert()
-        self.bg = pygame.transform.scale(self.bg, (self.width, self.height))
-
-        self.player_img = pygame.image.load("player.png").convert_alpha()
-        self.player_img = pygame.transform.scale(self.player_img, (80, 80))
-        self.player_img = pygame.transform.rotate(self.player_img, 90)
-
-        self.enemy_img = pygame.image.load("enemy.png").convert_alpha()
-        self.enemy_img = pygame.transform.scale(self.enemy_img, (80, 80))
-        self.enemy_img = pygame.transform.rotate(self.enemy_img, -90)
-
-        self.bullet_img = pygame.image.load("bullet.png").convert_alpha()
-        self.bullet_img = pygame.transform.scale(self.bullet_img, (10, 20))
-        self.bullet_img = pygame.transform.rotate(self.bullet_img, 90)
+        self.bg = pygame.transform.scale(pygame.image.load("background_galaxy.png").convert(), (self.width, self.height))
+        self.player_img = pygame.transform.rotate(pygame.transform.scale(pygame.image.load("player.png").convert_alpha(), (80, 80)), 90)
+        self.enemy_img = pygame.transform.rotate(pygame.transform.scale(pygame.image.load("enemy.png").convert_alpha(), (80, 80)), -90)
+        self.bullet_img = pygame.transform.rotate(pygame.transform.scale(pygame.image.load("bullet.png").convert_alpha(), (10, 20)), 90)
 
         self.player = Player(480, 700, 50, self.player_img)
-
         self.enemies = []
         self.bullets = []
         self.explosions = []
 
-        # Áudios
         self.shot_sound = pygame.mixer.Sound("shoot.wav")
         self.explosion_sound = pygame.mixer.Sound("explosion.wav")
 
         try:
             pygame.mixer.music.load("music.wav")
             pygame.mixer.music.set_volume(0.2)
-        except:
-            print("Música não encontrada.")
+        except: pass
+
+    def fire_bullet(self):
+        new_bullet = Bullet(self.player.x + self.player.size//2 - 5, self.player.y, self.bullet_img)
+        self.bullets.append(new_bullet)
+        self.shot_sound.play()
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -118,91 +105,104 @@ class Game:
                 self.running = False
             
             if self.state == "MENU":
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        self.state = "PLAYING"
-                        pygame.mixer.music.play(-1)
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    self.state = "PLAYING"
+                    self.score = 0
+                    self.points_since_last_hit = 0
+                    self.special_available = 0
+                    pygame.mixer.music.play(-1)
 
             elif self.state == "PLAYING":
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        new_bullet = Bullet(self.player.x + self.player.size//2 - 5, self.player.y, self.bullet_img)
-                        self.bullets.append(new_bullet)
-                        self.shot_sound.play()
+                    if event.key == pygame.K_f and self.special_available > 0 and self.special_active_timer <= 0:
+                        self.special_available -= 1
+                        self.special_active_timer = 180 # 3 segundos
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE and self.special_active_timer <= 0:
+                        self.fire_bullet()
 
     def update(self):
-        if self.state != "PLAYING":
-            return
+        if self.state != "PLAYING": return
         
         keys = pygame.key.get_pressed()
         self.player.move(keys, self.width, self.height)
 
+        if self.special_active_timer > 0:
+            self.special_active_timer -= 1
+            if keys[pygame.K_SPACE] and self.fire_rate_timer <= 0:
+                self.fire_bullet()
+                self.fire_rate_timer = 7
+        
+        if self.fire_rate_timer > 0:
+            self.fire_rate_timer -= 1
+
+        if self.points_since_last_hit >= 100:
+            self.special_available += 1
+            self.points_since_last_hit = 0
+
         self.spawn_timer += 1
-        if self.spawn_timer > 50:
+        if self.spawn_timer > 40:
             self.enemies.append(Enemy(self.enemy_img))
             self.spawn_timer = 0
 
-        for enemy in self.enemies:
-            enemy.update()
-
-        for bullet in self.bullets:
-            bullet.update()
-
-        for exp in self.explosions:
-            exp.update()
-        
+        for enemy in self.enemies: enemy.update()
+        for bullet in self.bullets: bullet.update()
+        for exp in self.explosions: exp.update()
         self.explosions = [e for e in self.explosions if e.alive]
 
-        # Sistema de colisão Bala vs Inimigo
         for bullet in self.bullets[:]:
             for enemy in self.enemies[:]:
                 if self.collide(bullet, enemy):
                     self.explosions.append(Explosion(enemy.x + enemy.size//2, enemy.y + enemy.size//2))
                     self.explosion_sound.play()
+                    self.score += 10
+                    self.points_since_last_hit += 10 # Soma para o especial
                     if bullet in self.bullets: self.bullets.remove(bullet)
                     if enemy in self.enemies: self.enemies.remove(enemy)
                     break
 
-        # Sistema de colisão Inimigo vs Player
         for enemy in self.enemies[:]:
             if self.collide(enemy, self.player):
                 self.enemies.remove(enemy)
                 self.player.lives -= 1
+                self.points_since_last_hit = 0 
 
         self.bullets = [b for b in self.bullets if b.y > -50]
         self.enemies = [e for e in self.enemies if e.y < self.height]
 
     def collide(self, a, b):
-        return (
-            a.x < b.x + b.size and
-            a.x + a.size > b.x and
-            a.y < b.y + b.size and
-            a.y + a.size > b.y
-        )
+        return (a.x < b.x + b.size and a.x + a.size > b.x and
+                a.y < b.y + b.size and a.y + a.size > b.y)
     
     def draw(self):
         self.screen.blit(self.bg, (0, 0))
-        
+        font = pygame.font.SysFont(None, 30)
+
         if self.state == "MENU":
-            font = pygame.font.SysFont(None, 50)
-            text = font.render("Pressione Enter para Iniciar", True, (255, 255, 255))
-            self.screen.blit(text, (self.width//2 - 200, self.height//2))
+            msg = font.render("Pressione Enter para Iniciar", True, (255, 255, 255))
+            self.screen.blit(msg, (self.width//2 - 150, self.height//2))
         
         elif self.state == "PLAYING":
             self.player.draw(self.screen)
+            for enemy in self.enemies: enemy.draw(self.screen)
+            for bullet in self.bullets: bullet.draw(self.screen)
+            for exp in self.explosions: exp.draw(self.screen)
 
-            for enemy in self.enemies:
-                enemy.draw(self.screen)
-
-            for bullet in self.bullets:
-                bullet.draw(self.screen)
-
-            for exp in self.explosions:
-                exp.draw(self.screen)
-
-            font = pygame.font.SysFont(None, 30)
-            lives_text = font.render(f"Vidas: {self.player.lives}", True, (255, 255, 255))
-            self.screen.blit(lives_text, (10, 10))
+            self.screen.blit(font.render(f"Vidas: {self.player.lives}", True, (255, 255, 255)), (10, 10))
+            self.screen.blit(font.render(f"Pontos: {self.score}", True, (255, 255, 255)), (10, 40))
+            
+            progresso = min(self.points_since_last_hit, 100)
+            pygame.draw.rect(self.screen, (50, 50, 50), (10, 75, 100, 10))
+            pygame.draw.rect(self.screen, (0, 200, 255), (10, 75, progresso, 10))
+            
+            spec_text = f"Especiais: {self.special_available} (Aperte F)"
+            if self.special_active_timer > 0:
+                spec_text = "!!! MODO RAJADA !!!"
+                color = (255, 0, 0)
+            else:
+                color = (0, 255, 255) if self.special_available > 0 else (150, 150, 150)
+            
+            self.screen.blit(font.render(spec_text, True, color), (10, 90))
 
         pygame.display.flip()
 
@@ -211,15 +211,9 @@ class Game:
             self.handle_events()
             self.update()
             self.draw()
-            
-            if self.player.lives <= 0:
-                print("Game Over!")
-                self.running = False
-                
+            if self.player.lives <= 0: self.running = False
             self.clock.tick(60)
-
         pygame.quit()
 
 if __name__ == "__main__":
-    game = Game()
-    game.run()
+    Game().run()
