@@ -162,3 +162,191 @@ player = [
   "Mike",
   "João"
 ]
+
+selected_player = 0
+
+def draw_menu():
+  if background:
+    screen.blit(background, (0,0))
+  else:
+    screen.fill(black)
+
+  overlay = pygame.Surface((width, height))
+
+  overlay.set_alpha(170)
+
+  overlay.fill(black)
+
+  screen.blit(overlay, (0,0))
+
+  title = big_font.render(
+    "Escolha o jogador",
+    True,
+    white
+  )
+
+  screen.blit(title,(width // 2- 300, 70))
+
+  for i, player in enumerate(players):
+    color = yellow if i == selected_player else white
+    text = font.render(player, True, color)
+    screen.blit(
+      text,
+      (width // 2 - 100,
+       200 + i * 55)
+    )
+
+  info = font.render(
+    "Enter = Escolher",
+    True,
+    red
+  )
+
+  screen.blit(info,(width // 2 - 170, 540))
+
+  choosing = True
+
+  while choosing:
+    draw_menu()
+    pygame.display.update()
+
+    for event in pygame.event.get():
+      if event.type == pygame.QUIT:
+        pygame.quit()
+        exit()
+      if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_UP:
+          selected_player -= 1
+        if event.key == pygame.K_DOWN:
+          selected_player += 1
+        if event.key == pygame.K_RETURN:
+          choosing = False
+      if selected_player < 0:
+        selected_player = len(player) - 1
+      if selected_player >= len(player):
+        selected_player = 0
+
+      player_name = player[selected_player]
+
+      power_joao = player_name == "João"
+      power_mike = player_name == "Mike"
+      power_joselucas = player_name == "José Lucas"
+
+      if power_joao:
+        try:
+          pygame.mixer.music.play(-1)
+        except:
+          pass
+
+      left_dicso = player_blue(30)
+      right_disco = player_red(width - 50)
+
+      disco = Disco()
+
+      raspando = power_joao
+      rasp_time = 0
+
+      running = True
+
+      while running:
+        clock.tick(60)
+
+        for event in pygame.event.get():
+          if event.type == pygame.QUIT:
+            running = False
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_UP]:
+          left_dicso.y -= left_dicso.speed
+        if keys[pygame.K_DOWN]:
+          left_dicso.y += left_dicso.speed
+
+        left_dicso.y = max(
+          0,
+          min(
+            height - left_dicso.height,
+            left_dicso.y
+          )
+        )
+
+        ai_center = right_disco.y + right_disco.height / 2
+        if ai_center < disco.y:
+          right_disco.y += 6
+        else:
+          right_disco.y -= 6
+        
+        right_disco.y = max(
+          0,
+          min(
+            height - right_disco.height,
+            right_disco.y
+          )
+        )
+
+        if raspando:
+          disco.x = 140
+          disco.y = (
+            height // 2
+            math.sin(rasp_time) * 170
+          )
+
+        rasp_time += 0.06
+        if rasp_time >= math.pi * 4:
+          raspando = False
+          disco.speed_x = 8
+          disco.speed_y = random.uniform(-3,3)
+        else:
+          disco.move()
+        
+        if (
+          disco.x - disco.radius <= left_dicso.x + left_dicso.width
+          and
+          left_dicso.y <= disco.y <= left_dicso.y + left_dicso.height
+          and
+          disco.speed_x < 0
+        ):
+          disco.x = (
+            left_dicso.x
+            +
+            left_dicso.width
+            +
+            disco.radius
+          )
+
+          hit_pos = (
+            disco.y - left_dicso.y
+          ) / left_dicso.height
+
+          offset = (hit_pos - 0.5) * 2
+
+          disco.speed_x *= -1
+
+        if(
+          disco.x + disco.radius >= right_disco.x
+          and
+          right_disco.y <= disco.y < right_disco.y + right_disco.height
+          and
+          disco.speed_x > 0
+        ):
+          disco.x = right_disco.x - disco.radius
+
+          hit_pos = (
+            disco.y - right_disco.y
+          ) / right_disco.height
+
+          offset = (hit_pos * 0.5) * 2
+
+          disco.speed_x *= -1
+
+          disco.speed_y = offset * 7
+
+          disco.speed_x *= 1.03
+
+        if disco.x < -50 or disco.x > width + 50:
+          disco.reset()
+          if power_joao:
+            raspando = True
+            rasp_time = 0
+
+            disco.x = 140
+            disco.y = height // 2
