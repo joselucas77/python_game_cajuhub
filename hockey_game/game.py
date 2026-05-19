@@ -7,8 +7,8 @@ pygame.init()
 pygame.mixer.init()
 
 # Tamanho ajustado para o formato padrão do campo horizontal
-width = 800
-height = 600
+width = 1000
+height = 700
 
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Hockey Game")
@@ -37,19 +37,19 @@ except:
 
 try:
     disco_img = pygame.image.load("disco.png")
-    disco_img = pygame.transform.scale(disco_img, (68, 68))
+    disco_img = pygame.transform.scale(disco_img, (80, 80))
 except:
     disco_img = None
 
 try:
     player_blue = pygame.image.load("player_blue.png")
-    player_blue = pygame.transform.scale(player_blue, (80, 80))
+    player_blue = pygame.transform.scale(player_blue, (120, 120))
 except:
     player_blue = None
 
 try:
     player_red = pygame.image.load("player_red.png")
-    player_red = pygame.transform.scale(player_red, (80, 80))
+    player_red = pygame.transform.scale(player_red, (120, 120))
 except:
     player_red = None
 
@@ -65,8 +65,8 @@ except:
 class Player:
     def __init__(self, x, is_jose_lucas=False):
         self.x = x
-        self.width = 80
-        self.height = 80
+        self.width = 120
+        self.height = 120
         self.y = height // 2 - (self.height // 2)
         self.speed = 12 if is_jose_lucas else 8
         self.vidas = 3  
@@ -90,7 +90,7 @@ class Player:
 class Disco:
     def __init__(self, is_mike=False):
         self.is_mike = is_mike
-        self.radius = 34
+        self.radius = 40
         self.reset()
 
     def reset(self):
